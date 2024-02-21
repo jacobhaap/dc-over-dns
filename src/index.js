@@ -1,7 +1,9 @@
-const { getValueFromRecord } = require('./dnsCheck');
+const { getValueFromRecord } = require('./resolve');
 
-function dcDNS(domain) {
-    return getValueFromRecord(domain);
-}
+const dcDNS = {
+    resolve: function(domain) {
+        return getValueFromRecord(domain);
+    }
+};
 
 module.exports = { dcDNS };
