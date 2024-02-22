@@ -20,12 +20,12 @@ function parseTxtRecord(txtRecord) {
         if (dcValue === 'hybrid') {
             result.contents = addrOrContParts.map(part => {
                 const [, protocol, content] = part.split(/\/+/);
-                return { 'content-type': protocol, 'content': content };
+                return { 'protocol': protocol, 'content': content };
             });
         } else {
             const [, protocol, content] = addrOrContParts[0].split(/\/+/);
             if (protocol && content) {
-                result['content-type'] = protocol;
+                result['protocol'] = protocol;
                 result['content'] = content;
             }
         }
