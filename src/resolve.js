@@ -1,16 +1,8 @@
-const dns = require('dns').promises;
+const fetchDNSTxtRecord = require('./dnsLookup');
 
 async function checkDNSTxtRecord(domain) {
-    const prefix = '_dcdns';
-    const fullDomain = `${prefix}.${domain}`;
-    try {
-        const records = await dns.resolveTxt(fullDomain);
-        const txtRecords = records.flat().join(';');
-        return parseTxtRecord(txtRecords);
-    } catch (error) {
-        console.error(`Failed to resolve TXT records for ${fullDomain}:`, error);
-        return null;
-    }
+    const txtRecords = await fetchDNSTxtRecord(domain);
+    return parseTxtRecord(txtRecords);
 }
 
 function parseTxtRecord(txtRecord) {
@@ -44,7 +36,6 @@ function getValue(parsedRecord) {
     return values.join(', ');
 }
 
-exports.checkDNSTxtRecord = checkDNSTxtRecord;
 exports.getValueFromRecord = async (domain) => {
     const parsedRecord = await checkDNSTxtRecord(domain);
     return getValue(parsedRecord);
