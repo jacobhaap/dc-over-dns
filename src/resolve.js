@@ -2,6 +2,9 @@ const fetchDNSTxtRecord = require('./dnsLookup');
 
 async function checkDNSTxtRecord(domain) {
     const txtRecords = await fetchDNSTxtRecord(domain);
+    if (txtRecords === null) {
+        return null;
+    }
     return parseTxtRecord(txtRecords);
 }
 

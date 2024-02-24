@@ -20,13 +20,13 @@ function validateTxtRecord(txtRecord) {
     const parts = txtRecord.split(';').map(part => part.trim());
     const dcPart = parts.find(part => part.startsWith('dc='));
     if (!dcPart) {
-        console.error('Missing dc part in TXT record');
+        console.error('Missing "dc=" in TXT record');
         return false;
     }
 
     const dcValue = dcPart.substring(3);
     if (!['address', 'content', 'hybrid'].includes(dcValue)) {
-        console.error(`Invalid dc value: ${dcValue}`);
+        console.error(`Invalid "dc=" value: ${dcValue}`);
         return false;
     }
 
@@ -47,7 +47,7 @@ function validateTxtRecord(txtRecord) {
     const contParts = parts.filter(part => part.startsWith('cont='));
 
     if (dcValue === 'address' && contParts.length > 0 || dcValue === 'content' && addrParts.length > 0) {
-        console.error(`Invalid content for dc type ${dcValue}`);
+        console.error(`Invalid content for "dc=" type ${dcValue}`);
         return false;
     }
 
