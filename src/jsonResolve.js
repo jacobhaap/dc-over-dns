@@ -16,19 +16,12 @@ function parseTxtRecord(txtRecord) {
     };
 
     const addrOrContParts = parts.filter(part => part.startsWith('addr=') || part.startsWith('cont='));
+
     if (addrOrContParts.length > 0) {
-        if (dcValue === 'hybrid') {
-            result.contents = addrOrContParts.map(part => {
-                const [, protocol, content] = part.split(/\/+/);
-                return { 'protocol': protocol, 'content': content };
-            });
-        } else {
-            const [, protocol, content] = addrOrContParts[0].split(/\/+/);
-            if (protocol && content) {
-                result['protocol'] = protocol;
-                result['content'] = content;
-            }
-        }
+        result.contents = addrOrContParts.map(part => {
+            const [, protocol, content] = part.split(/\/+/);
+            return { protocol, content };
+        });
     }
 
     return result;
