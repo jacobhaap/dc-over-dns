@@ -4,6 +4,7 @@ Decentralized Content over DNS (**dc-over-dns** or **dcdns**) is a concept for u
 | example.com | record type | value |
 |--|--|--|
 | _dcdns | txt | dc=hybrid; cont=/ipfs/QmabZ1pL9npKXJg8JGdMwQMJo2NCVy9yDVYjhiHK4LTJQH; addr=/eth/0x0000000000000000000000000000000000000000 |
+
 The key components of the `txt` record are:
 - `dc`: Specifies the type of the record, which can be `content`, `address`, or `hybrid`. `content` is limited to accepting `cont`, `address` is limited to accepting `addr`, while `hybrid` may accept both. Multiple `cont` or `addr` values may be passed, granted that they do not use the same protocol.
 - `cont`: Points to decentralized content, such as IPFS or Arweave.
