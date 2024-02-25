@@ -2,6 +2,9 @@ const fetchDNSTxtRecord = require('./dnsLookup');
 
 async function checkDNSTxtRecord(domain) {
     const txtRecords = await fetchDNSTxtRecord(domain);
+    if (txtRecords === null) {
+        return null;
+    }
     return parseTxtRecord(txtRecords);
 }
 
@@ -14,20 +17,20 @@ function parseTxtRecord(txtRecord) {
     let result = { dc: dcValue };
 
     if (dcValue === 'address' || dcValue === 'hybrid') {
-        const addrPart = parts.find(part => part.startsWith('addr='));
-        if (addrPart) result.addr = addrPart.substring(5);
+        const addrParts = parts.filter(part => part.startsWith('addr=')).map(part => part.substring(5));
+        if (addrParts.length) result.addr = addrParts.join(', ');
     }
 
     if (dcValue === 'content' || dcValue === 'hybrid') {
-        const contPart = parts.find(part => part.startsWith('cont='));
-        if (contPart) result.cont = contPart.substring(5);
+        const contParts = parts.filter(part => part.startsWith('cont=')).map(part => part.substring(5));
+        if (contParts.length) result.cont = contParts.join(', ');
     }
 
     return result;
 }
 
 function getValue(parsedRecord) {
-    if (!parsedRecord) return 'Record not found or could not be parsed';
+    if (!parsedRecord) return null;
 
     let values = [];
     if (parsedRecord.addr) values.push(parsedRecord.addr);
