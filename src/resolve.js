@@ -30,7 +30,7 @@ function parseTxtRecord(txtRecord) {
 }
 
 function getValue(parsedRecord) {
-    if (!parsedRecord) return 'Record not found or could not be parsed';
+    if (!parsedRecord) return null;
 
     let values = [];
     if (parsedRecord.addr) values.push(parsedRecord.addr);

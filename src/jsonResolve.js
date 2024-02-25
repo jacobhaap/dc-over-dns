@@ -32,7 +32,7 @@ function parseTxtRecord(txtRecord) {
 
 exports.getJsonValueFromRecord = async (domain) => {
     const parsedRecord = await checkDNSTxtRecord(domain);
-    if (!parsedRecord) return JSON.stringify({ error: 'Record not found or could not be parsed' });
+    if (!parsedRecord) return null;
 
     return JSON.stringify(parsedRecord, null, 2);
 };
