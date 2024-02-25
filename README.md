@@ -1,18 +1,24 @@
 # Decentralized Content over DNS
-Decentralized Content over DNS (**dc-over-dns** or **dcdns**) is a basic concept for using DNS `txt` records to point domains to decentralized content sources or addresses, such as IPFS Content Identifiers, and Ethereum Addresses.
+Decentralized Content over DNS (**dc-over-dns** or **dcdns**) is a concept for using DNS `txt` records to point domains to decentralized content sources or addresses, such as IPFS Content Identifiers, and Ethereum Addresses.
 
 | example.com | record type | value |
 |--|--|--|
 | _dcdns | txt | dc=hybrid; cont=/ipfs/QmabZ1pL9npKXJg8JGdMwQMJo2NCVy9yDVYjhiHK4LTJQH; addr=/eth/0x0000000000000000000000000000000000000000 |
+The key components of the `txt` record are:
+- `dc`: Specifies the type of the record, which can be `content`, `address`, or `hybrid`. `content` is limited to accepting `cont`, `address` is limited to accepting `addr`, while `hybrid` may accept both. Multiple `cont` or `addr` values may be passed, granted that they do not use the same protocol.
+- `cont`: Points to decentralized content, such as IPFS or Arweave.
+- `addr`: Points to addresses, such as an Ethereum address or Bitcoin wallet address.
+
+Both `cont` and `addr` must follow the same formatting for their values, the format being `/{protocol}/{content}`.
 
 This repository contains a basic library that accepts a domain as input, validates the `txt` record, and returns the content/address values. For example, the domain `example.com` can be passed, where the library will locate the `txt` record on `_dcdns.example.com`, validates the format of the record, and returns the value. This also works on subdomains, where for `sub.example.com`, a `txt` record on `_dcdns.sub.example.com` will validate the record and return the value.
 
-This library does not focus on a specific type of address to accept, or a specific content type, and does not provide methods for resolving any content records. For example, while this library can allow you to find a record of an IPFS CID on a traditional DNS domain, it does not provide resolution of the IPFS content itself or a gateway to access content.
+The library remains agnostic to specific address or content types and does not offer resolution services for the content records identified. For example, while it enables the discovery of an IPFS CID linked to a traditional DNS domain, it does not resolve the IPFS content or provide access to it. 
 
-The data returned by default will directly return the `cont` or `addr` value(s) corresponding to the record by calling `dcDNS.resolve`. Alternatively, the data can be returned in a JSON object, using `dcDNS.jsonResolve`.
+By default, the `dcDNS.resolve` function directly returns the `cont` or `addr` value(s) found within the record. Alternatively, `dcDNS.jsonResolve` can return the data in a structured JSON format.
 
 ## Usage
-Install with `npm i dc-over-dns`, and then import with `const { dcDNS } =  require('dc-over-dns');`.
+To utilize this library, install it via `npm i dc-over-dns`, and then import it using `const { dcDNS } =  require('dc-over-dns');`.
 
 ### Example Usage for `dcDNS.resolve`:
 
