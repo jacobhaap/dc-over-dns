@@ -1,4 +1,4 @@
-const fetchDNSTxtRecord = require('./dnsLookup');
+const { fetchDNSTxtRecord } = require('./dnsLookup');
 
 async function checkDNSTxtRecord(domain) {
     const txtRecords = await fetchDNSTxtRecord(domain);

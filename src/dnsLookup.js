@@ -1,18 +1,61 @@
 const dns = require('dns').promises;
+const { Resolver } = require('dns');
+
+let customResolver = null;
+
+function setResolver(servers) {
+    if (Array.isArray(servers) && servers.length > 0) {
+        customResolver = new Resolver();
+        customResolver.setServers(servers);
+    } else {
+        customResolver = null;
+    }
+}
 
 async function fetchDNSTxtRecord(domain) {
     const prefix = '_dcdns';
     const fullDomain = `${prefix}.${domain}`;
-    try {
-        const records = await dns.resolveTxt(fullDomain);
-        const txtRecords = records.flat().join(';');
-        if (!validateTxtRecord(txtRecords)) {
+
+    const resolveWithCustomResolver = () => {
+        return new Promise((resolve, reject) => {
+            customResolver.resolveTxt(fullDomain, (err, records) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    const txtRecords = records.flat().join(';');
+                    if (!validateTxtRecord(txtRecords)) {
+                        resolve(null);
+                    } else {
+                        resolve(txtRecords);
+                    }
+                }
+            });
+        });
+    };
+
+    const resolveWithDefaultResolver = async () => {
+        try {
+            const records = await dns.resolveTxt(fullDomain);
+            const txtRecords = records.flat().join(';');
+            if (!validateTxtRecord(txtRecords)) {
+                return null;
+            }
+            return txtRecords;
+        } catch (error) {
+            console.error(`Failed to resolve TXT records for ${fullDomain} using default resolver:`, error);
             return null;
         }
-        return txtRecords;
-    } catch (error) {
-        console.error(`Failed to resolve TXT records for ${fullDomain}:`, error);
-        return null;
+    };
+
+    if (customResolver) {
+        try {
+            return await resolveWithCustomResolver();
+        } catch (error) {
+            console.error(`Failed to resolve TXT records for ${fullDomain} using custom resolver:`, error);
+            return null;
+        }
+    } else {
+        return await resolveWithDefaultResolver();
     }
 }
 
@@ -54,4 +97,4 @@ function validateTxtRecord(txtRecord) {
     return true;
 }
 
-module.exports = fetchDNSTxtRecord;
+module.exports = { fetchDNSTxtRecord, setResolver };
