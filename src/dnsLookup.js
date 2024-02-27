@@ -42,7 +42,7 @@ async function fetchDNSTxtRecord(domain) {
             }
             return txtRecords;
         } catch (error) {
-            console.error(`Failed to resolve TXT records for ${fullDomain} using default resolver:`, error);
+            console.error(`Failure: Unable to resolve TXT records for ${fullDomain} with default resolver`, error);
             return null;
         }
     };
@@ -51,7 +51,7 @@ async function fetchDNSTxtRecord(domain) {
         try {
             return await resolveWithCustomResolver();
         } catch (error) {
-            console.error(`Failed to resolve TXT records for ${fullDomain} using custom resolver:`, error);
+            console.error(`Failure: Unable to resolve TXT records for ${fullDomain} with configured resolver`, error);
             return null;
         }
     } else {
@@ -63,13 +63,13 @@ function validateTxtRecord(txtRecord) {
     const parts = txtRecord.split(';').map(part => part.trim());
     const dcPart = parts.find(part => part.startsWith('dc='));
     if (!dcPart) {
-        console.error('Missing "dc=" in TXT record');
+        console.error('Rejection: Missing "dc=" in TXT record');
         return false;
     }
 
     const dcValue = dcPart.substring(3);
     if (!['address', 'content', 'hybrid', 'redirect'].includes(dcValue)) {
-        console.error(`Invalid "dc=" value: ${dcValue}`);
+        console.error(`Rejection: Invalid "dc=" value: "${dcValue}"`);
         return false;
     }
 
@@ -78,12 +78,12 @@ function validateTxtRecord(txtRecord) {
     for (const part of parts) {
         if (part.startsWith('addr=') || part.startsWith('cont=')) {
             if (dcValue === 'redirect') {
-                console.error('Redirect type should not include addr= or cont= records');
+                console.error('Rejection: "dc=" type "redirect" cannot include "addr=" or "cont=" values');
                 return false;
             }
             const [, protocol] = part.split('/');
             if (protocols.has(protocol)) {
-                console.error(`Duplicate protocol found: ${protocol} in ${part.startsWith('addr=') ? 'addr' : 'cont'}`);
+                console.error(`Rejection: Duplicate protocol "${protocol}" in ${part.startsWith('addr=') ? "addr=" : "cont="} value`);
                 return false;
             }
             protocols.add(protocol);
@@ -95,22 +95,22 @@ function validateTxtRecord(txtRecord) {
     const redirParts = parts.filter(part => part.startsWith('redir='));
 
     if (dcValue === 'address' && contParts.length > 0 || dcValue === 'content' && addrParts.length > 0) {
-        console.error(`Invalid content for "dc=" type ${dcValue}`);
+        console.error(`Rejection: Invalid content for "dc=" type "${dcValue}"`);
         return false;
     }
 
     if (dcValue === 'redirect') {
         if (redirParts.length !== 1) {
-            console.error('Redirect type must include only one redir= record');
+            console.error('Rejection: "dc=" type "redirect" cannot exceed more than one "redir=" value');
             return false;
         }
         if (addrParts.length > 0 || contParts.length > 0) {
-            console.error('Redirect type should not include addr= or cont= records');
+            console.error('Rejection: "dc=" type "redirect" cannot include "addr=" or "cont=" values');
             return false;
         }
     } else {
         if (redirParts.length > 0) {
-            console.error('Redir= record is exclusive to "dc=redirect" type');
+            console.error('Rejection: Value "redir=" is exclusive to "dc=" type "redirect"');
             return false;
         }
     }
