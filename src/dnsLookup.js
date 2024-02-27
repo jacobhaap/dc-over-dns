@@ -68,7 +68,7 @@ function validateTxtRecord(txtRecord) {
     }
 
     const dcValue = dcPart.substring(3);
-    if (!['address', 'content', 'hybrid'].includes(dcValue)) {
+    if (!['address', 'content', 'hybrid', 'redirect'].includes(dcValue)) {
         console.error(`Invalid "dc=" value: ${dcValue}`);
         return false;
     }
@@ -77,6 +77,10 @@ function validateTxtRecord(txtRecord) {
 
     for (const part of parts) {
         if (part.startsWith('addr=') || part.startsWith('cont=')) {
+            if (dcValue === 'redirect') {
+                console.error('Redirect type should not include addr= or cont= records');
+                return false;
+            }
             const [, protocol] = part.split('/');
             if (protocols.has(protocol)) {
                 console.error(`Duplicate protocol found: ${protocol} in ${part.startsWith('addr=') ? 'addr' : 'cont'}`);
@@ -88,10 +92,27 @@ function validateTxtRecord(txtRecord) {
 
     const addrParts = parts.filter(part => part.startsWith('addr='));
     const contParts = parts.filter(part => part.startsWith('cont='));
+    const redirParts = parts.filter(part => part.startsWith('redir='));
 
     if (dcValue === 'address' && contParts.length > 0 || dcValue === 'content' && addrParts.length > 0) {
         console.error(`Invalid content for "dc=" type ${dcValue}`);
         return false;
+    }
+
+    if (dcValue === 'redirect') {
+        if (redirParts.length !== 1) {
+            console.error('Redirect type must include only one redir= record');
+            return false;
+        }
+        if (addrParts.length > 0 || contParts.length > 0) {
+            console.error('Redirect type should not include addr= or cont= records');
+            return false;
+        }
+    } else {
+        if (redirParts.length > 0) {
+            console.error('Redir= record is exclusive to "dc=redirect" type');
+            return false;
+        }
     }
 
     return true;

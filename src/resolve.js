@@ -26,6 +26,11 @@ function parseTxtRecord(txtRecord) {
         if (contParts.length) result.cont = contParts.join(', ');
     }
 
+    if (dcValue === 'redirect') {
+        const redirParts = parts.filter(part => part.startsWith('redir=')).map(part => part.substring(6));
+        if (redirParts.length) result.redir = redirParts[0];
+    }
+
     return result;
 }
 
@@ -35,6 +40,7 @@ function getValue(parsedRecord) {
     let values = [];
     if (parsedRecord.addr) values.push(parsedRecord.addr);
     if (parsedRecord.cont) values.push(parsedRecord.cont);
+    if (parsedRecord.redir) values.push(parsedRecord.redir);
 
     return values.join(', ');
 }

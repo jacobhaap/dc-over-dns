@@ -18,13 +18,20 @@ function parseTxtRecord(txtRecord) {
         type: `_dcdns.${dcValue}`
     };
 
-    const addrOrContParts = parts.filter(part => part.startsWith('addr=') || part.startsWith('cont='));
-
-    if (addrOrContParts.length > 0) {
-        result.contents = addrOrContParts.map(part => {
-            const [, protocol, content] = part.split(/\/+/);
-            return { protocol, content };
-        });
+    if (dcValue === 'redirect') {
+        const redirParts = parts.filter(part => part.startsWith('redir='));
+        if (redirParts.length === 1) {
+            const [, protocol, name] = redirParts[0].split(/\/+/);
+            result.redirect = { protocol, name };
+        }
+    } else {
+        const addrOrContParts = parts.filter(part => part.startsWith('addr=') || part.startsWith('cont='));
+        if (addrOrContParts.length > 0) {
+            result.contents = addrOrContParts.map(part => {
+                const [, protocol, content] = part.split(/\/+/);
+                return { protocol, content };
+            });
+        }
     }
 
     return result;
