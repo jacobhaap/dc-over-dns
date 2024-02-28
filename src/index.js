@@ -1,5 +1,6 @@
 const { getValueFromRecord } = require('./resolve');
 const { getJsonValueFromRecord } = require('./jsonResolve');
+const { setResolver } = require('./dnsLookup');
 
 const dcDNS = {
     resolve: function(domain) {
@@ -10,4 +11,12 @@ const dcDNS = {
     }
 };
 
-module.exports = { dcDNS };
+function configureResolver(servers) {
+    if (Array.isArray(servers)) {
+        setResolver(servers);
+    } else {
+        console.error('configureResolver Error: Address array expected');
+    }
+}
+
+module.exports = { dcDNS, configureResolver };
