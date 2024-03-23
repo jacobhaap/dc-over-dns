@@ -15,7 +15,7 @@ function configureResolver(servers) {
     if (Array.isArray(servers)) {
         setResolver(servers);
     } else {
-        console.error('configureResolver Error: Address array expected');
+        throw new Error('configureResolver Error: Address array expected');
     }
 }
 
