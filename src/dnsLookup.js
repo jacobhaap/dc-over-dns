@@ -3,6 +3,13 @@ const { Resolver } = require('dns');
 
 let customResolver = null;
 
+class ValidationError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "ValidationError";
+    }
+}
+
 function setResolver(servers) {
     if (Array.isArray(servers) && servers.length > 0) {
         customResolver = new Resolver();
@@ -20,13 +27,17 @@ async function fetchDNSTxtRecord(domain) {
         return new Promise((resolve, reject) => {
             customResolver.resolveTxt(fullDomain, (err, records) => {
                 if (err) {
-                    reject(err);
+                    reject(new Error(`Failure: Unable to resolve TXT records for ${fullDomain} with configured resolver, ${err.message}`));
                 } else {
-                    const txtRecords = records.flat().join(';');
-                    if (!validateTxtRecord(txtRecords)) {
-                        resolve(null);
-                    } else {
-                        resolve(txtRecords);
+                    try {
+                        const txtRecords = records.flat().join(';');
+                        if (!validateTxtRecord(txtRecords)) {
+                            resolve(null);
+                        } else {
+                            resolve(txtRecords);
+                        }
+                    } catch (validationError) {
+                        reject(validationError);
                     }
                 }
             });
@@ -34,26 +45,25 @@ async function fetchDNSTxtRecord(domain) {
     };
 
     const resolveWithDefaultResolver = async () => {
-        try {
-            const records = await dns.resolveTxt(fullDomain);
-            const txtRecords = records.flat().join(';');
-            if (!validateTxtRecord(txtRecords)) {
-                return null;
-            }
-            return txtRecords;
-        } catch (error) {
-            throw new Error(`Failure: Unable to resolve TXT records for ${fullDomain} with default resolver`, error);
+        const records = await dns.resolveTxt(fullDomain);
+        const txtRecords = records.flat().join(';');
+        if (!validateTxtRecord(txtRecords)) {
+            return null;
         }
+        return txtRecords;
     };
 
     if (customResolver) {
-        try {
-            return await resolveWithCustomResolver();
-        } catch (error) {
-            throw new Error(`Failure: Unable to resolve TXT records for ${fullDomain} with configured resolver`, error);
-        }
+        return await resolveWithCustomResolver();
     } else {
-        return await resolveWithDefaultResolver();
+        try {
+            return await resolveWithDefaultResolver();
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                throw error;
+            }
+            throw new Error(`Failure: Unable to resolve TXT records for ${fullDomain} with default resolver, ${error.message}`);
+        }
     }
 }
 
@@ -61,12 +71,12 @@ function validateTxtRecord(txtRecord) {
     const parts = txtRecord.split(';').map(part => part.trim());
     const dcPart = parts.find(part => part.startsWith('dc='));
     if (!dcPart) {
-        throw new Error('Rejection: Missing "dc=" in TXT record');
+        throw new ValidationError('Rejection: Missing "dc=" in TXT record');
     }
 
     const dcValue = dcPart.substring(3);
     if (!['address', 'content', 'hybrid', 'redirect'].includes(dcValue)) {
-        throw new Error(`Rejection: Invalid "dc=" value: "${dcValue}"`);
+        throw new ValidationError(`Rejection: Invalid "dc=" value: "${dcValue}"`);
     }
 
     const protocols = new Set();
@@ -74,11 +84,11 @@ function validateTxtRecord(txtRecord) {
     for (const part of parts) {
         if (part.startsWith('addr=') || part.startsWith('cont=')) {
             if (dcValue === 'redirect') {
-                throw new Error('Rejection: "dc=" type "redirect" cannot include "addr=" or "cont=" values');
+                throw new ValidationError('Rejection: "dc=" type "redirect" cannot include "addr=" or "cont=" values');
             }
             const [, protocol] = part.split('/');
             if (protocols.has(protocol)) {
-                throw new Error(`Rejection: Duplicate protocol "${protocol}" in ${part.startsWith('addr=') ? "addr=" : "cont="} value`);
+                throw new ValidationError(`Rejection: Duplicate protocol "${protocol}" in ${part.startsWith('addr=') ? "addr=" : "cont="} value`);
             }
             protocols.add(protocol);
         }
@@ -89,19 +99,19 @@ function validateTxtRecord(txtRecord) {
     const redirParts = parts.filter(part => part.startsWith('redir='));
 
     if (dcValue === 'address' && contParts.length > 0 || dcValue === 'content' && addrParts.length > 0) {
-        throw new Error(`Rejection: Invalid content for "dc=" type "${dcValue}"`);
+        throw new ValidationError(`Rejection: Invalid content for "dc=" type "${dcValue}"`);
     }
 
     if (dcValue === 'redirect') {
         if (redirParts.length !== 1) {
-            throw new Error('Rejection: "dc=" type "redirect" cannot exceed more than one "redir=" value');
+            throw new ValidationError('Rejection: "dc=" type "redirect" must have exactly one "redir=" value');
         }
         if (addrParts.length > 0 || contParts.length > 0) {
-            throw new Error('Rejection: "dc=" type "redirect" cannot include "addr=" or "cont=" values');
+            throw new ValidationError('Rejection: "dc=" type "redirect" cannot include "addr=" or "cont=" values');
         }
     } else {
         if (redirParts.length > 0) {
-            throw new Error('Rejection: Value "redir=" is exclusive to "dc=" type "redirect"');
+            throw new ValidationError('Rejection: Value "redir=" is exclusive to "dc=" type "redirect"');
         }
     }
 
